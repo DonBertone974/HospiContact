@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="HospiContact" />
+  <title>HospiContact</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --danger: #dc2626;
+      --success: #16a34a;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* NAV */
+    nav { background: var(--primary); color: white; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    nav h1 { font-size: 1.2rem; font-weight: 700; }
+    .nav-tabs { display: flex; gap: 4px; }
+    .nav-tab { background: rgba(255,255,255,0.15); border: none; color: white; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: background 0.2s; }
+    .nav-tab.active { background: white; color: var(--primary); font-weight: 600; }
+
+    /* VIEWS */
+    .view { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
+    .view.active { display: block; }
+
+    /* CARDS */
+    .card { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 8px; border: none; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+    .btn-full { width: 100%; justify-content: center; }
+    .btn-sm { padding: 6px 12px; font-size: 0.82rem; }
+
+    /* INPUTS */
+    input, select, textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.95rem; font-family: inherit; background: white; color: var(--text); }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
+    label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; margin-top: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* SEARCH */
+    .search-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+    .search-bar input { flex: 1; }
+    .search-bar select { flex: 0 0 140px; }
+
+    /* CONTACT LIST */
+    .contact-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--card); border-radius: var(--radius); margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); cursor: pointer; transition: box-shadow 0.2s; }
+    .contact-item:hover { box-shadow: 0 3px 8px rgba(0,0,0,0.12); }
+    .contact-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0; }
+    .contact-info { flex: 1; min-width: 0; }
+    .contact-name { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .contact-sub { font-size: 0.8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .contact-tag { font-size: 0.72rem; background: #eff6ff; color: var(--primary); padding: 2px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+
+    /* MODAL */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: white; border-radius: 20px 20px 0 0; padding: 20px; width: 100%; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .modal-title { font-size: 1.1rem; font-weight: 700; }
+    .modal-close { background: var(--bg); border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+    /* OCR SECTION */
+    .camera-zone { border: 2.5px dashed var(--border); border-radius: var(--radius); padding: 32px 16px; text-align: center; cursor: pointer; transition: border-color 0.2s; }
+    .camera-zone:hover { border-color: var(--primary); }
+    .camera-zone .icon { font-size: 2.5rem; margin-bottom: 8px; }
+    .camera-zone p { color: var(--muted); font-size: 0.9rem; }
+    #previewImg { max-width: 100%; border-radius: 8px; margin-top: 12px; display: none; }
+
+    /* VALIDATION LIST */
+    .val-item { background: var(--bg); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+    .val-item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .val-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+    .val-badge.new { background: #dcfce7; color: #15803d; }
+    .val-badge.duplicate { background: #fef9c3; color: #92400e; }
+    .val-actions { display: flex; gap: 6px; margin-top: 8px; }
+
+    /* SETTINGS */
+    .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .tag-chip { background: #eff6ff; color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .tag-chip button { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0; }
+
+    /* API KEY */
+    .api-notice { background: #fef3c7; border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; color: #92400e; margin-bottom: 12px; }
+
+    /* EMPTY STATE */
+    .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+    .empty .icon { font-size: 2.5rem; margin-bottom: 8px; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 10px 20px; border-radius: 20px; font-size: 0.88rem; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+    .toast.show { opacity: 1; }
+
+    /* FAB */
+    .fab { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: white; font-size: 1.6rem; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.4); z-index: 150; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+    .fab:hover { background: var(--primary-dark); }
+
+    /* DETAIL VIEW */
+    .detail-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .phone-link { color: var(--primary); text-decoration: none; font-weight: 600; }
+    .info-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .info-row:last-child { border-bottom: none; }
+    .info-row .iicon { font-size: 1.1rem; width: 24px; text-align: center; }
+    .info-row .itext { flex: 1; }
+    .info-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .info-value { font-size: 0.95rem; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <h1>🏥 HospiContact</h1>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showView('annuaire')">Contacts</button>
+    <button class="nav-tab" onclick="showView('scan')">Scanner</button>
+    <button class="nav-tab" onclick="showView('settings')">Réglages</button>
+  </div>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ========= VIEW: ANNUAIRE ========= -->
+<div class="view active" id="view-annuaire">
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="🔍 Rechercher un nom…" oninput="renderContacts()" />
+    <select id="filterCat" onchange="renderContacts()">
+      <option value="">Toutes</option>
+    </select>
+  </div>
+  <div id="contactList"></div>
+</div>
+
+<!-- ========= VIEW: SCAN ========= -->
+<div class="view" id="view-scan">
+  <div class="card">
+    <h2 style="font-size:1rem;font-weight:700;margin-bottom:12px;">📷 Scanner un document</h2>
+
+    <div id="apiWarning" class="api-notice" style="display:none;">
+      ⚠️ Clé API Google Vision manquante. Rendez-vous dans <strong>Réglages</strong> pour la saisir.
+    </div>
+
+    <div class="camera-zone" onclick="document.getElementById('fileInput').click()">
+      <div class="icon">📸</div>
+      <p>Appuyez pour prendre une photo<br/>ou choisir une image</p>
+      <input type="file" id="fileInput" accept="image/*" capture="environment" style="display:none" onchange="handleImage(event)" />
+    </div>
+    <img id="previewImg" />
+
+    <div style="margin-top:12px;" id="ocrControls" style="display:none;">
+      <button class="btn btn-primary btn-full" id="ocrBtn" onclick="runOCR()" style="display:none;">
+        🔍 Extraire les contacts
+      </button>
+    </div>
+  </div>
+
+  <!-- VALIDATION -->
+  <div id="validationSection" style="display:none;">
+    <div class="card">
+      <h2 style="font-size:1rem;font-weight:700;margin-bottom:4px;">✅ Contacts détectés</h2>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;">Vérifiez et corrigez avant d'ajouter.</p>
+      <div id="validationList"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;" id="bulkActions">
+        <button class="btn btn-success btn-full" onclick="acceptAll()">✅ Tout accepter</button>
+        <button class="btn btn-outline btn-full" onclick="resetScan()">🗑 Annuler</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========= VIEW: SETTINGS ========= -->
+<div class="view" id="view-settings">
+  <div class="card">
+    <h2 style="font-size:1rem;font-weight:700;margin-bottom:4px;">🔑 Clé API Google Vision</h2>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">Obtenez une clé gratuite sur <strong>console.cloud.google.com</strong> → APIs → Cloud Vision API.</p>
+    <label>Clé API</label>
+    <input type="password" id="apiKeyInput" placeholder="AIza…" />
+    <button class="btn btn-primary btn-full" style="margin-top:10px;" onclick="saveApiKey()">💾 Enregistrer</button>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:1rem;font-weight:700;margin-bottom:4px;">🏷️ Catégories</h2>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">Créez vos propres catégories.</p>
+    <div class="tag-list" id="tagList"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <input type="text" id="newTagInput" placeholder="Nouvelle catégorie…" style="flex:1;" onkeydown="if(event.key==='Enter')addTag()" />
+      <button class="btn btn-primary" onclick="addTag()">+</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:1rem;font-weight:700;margin-bottom:10px;">🗄️ Données</h2>
+    <button class="btn btn-danger btn-full" onclick="clearAll()">🗑 Effacer tous les contacts</button>
+  </div>
+</div>
+
+<!-- FAB : ajouter contact manuellement -->
+<button class="fab" id="fab" onclick="openAddModal()" title="Ajouter un contact">＋</button>
+
+<!-- ========= MODAL: ADD/EDIT CONTACT ========= -->
+<div class="modal-overlay" id="modalContact">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Nouveau contact</span>
+      <button class="modal-close" onclick="closeModal('modalContact')">✕</button>
+    </div>
+    <label>Nom *</label>
+    <input type="text" id="cNom" placeholder="Jean Dupont" />
+    <label>Numéro de téléphone</label>
+    <input type="tel" id="cTel" placeholder="06 12 34 56 78" />
+    <label>Email</label>
+    <input type="email" id="cEmail" placeholder="jean@exemple.fr" />
+    <label>Catégorie</label>
+    <select id="cCat"></select>
+    <label>Notes</label>
+    <textarea id="cNotes" rows="2" placeholder="Remarques…"></textarea>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn btn-primary btn-full" onclick="saveContact()">💾 Enregistrer</button>
+      <button class="btn btn-outline" onclick="closeModal('modalContact')" style="flex:1;">Annuler</button>
+    </div>
+    <input type="hidden" id="cId" />
+  </div>
+</div>
+
+<!-- ========= MODAL: DETAIL CONTACT ========= -->
+<div class="modal-overlay" id="modalDetail">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="detailName"></span>
+      <button class="modal-close" onclick="closeModal('modalDetail')">✕</button>
+    </div>
+    <div id="detailBody"></div>
+    <div class="detail-actions">
+      <button class="btn btn-primary btn-full" onclick="editContact(currentDetailId)">✏️ Modifier</button>
+      <button class="btn btn-danger" onclick="deleteContact(currentDetailId)">🗑</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let contacts = JSON.parse(localStorage.getItem('contacts') || '[]');
+let categories = JSON.parse(localStorage.getItem('categories') || '["Urgences","Admin","Prestataires","Collègues"]');
+let currentDetailId = null;
+let pendingContacts = []; // contacts en attente de validation
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  const fab = document.getElementById('fab');
+  fab.style.display = name === 'annuaire' ? 'flex' : 'none';
+  if (name === 'annuaire') renderContacts();
+  if (name === 'settings') renderSettings();
+  if (name === 'scan') checkApiKey();
+}
+
+// ============================================================
+// CONTACTS
+// ============================================================
+function saveContacts() {
+  localStorage.setItem('contacts', JSON.stringify(contacts));
+}
+
+function getInitials(name) {
+  return name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+}
+
+function avatarColor(name) {
+  const colors = ['#2563eb','#7c3aed','#db2777','#ea580c','#16a34a','#0891b2'];
+  let h = 0; for (let c of name) h += c.charCodeAt(0);
+  return colors[h % colors.length];
+}
+
+function renderContacts() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const cat = document.getElementById('filterCat').value;
+  let list = contacts.filter(c => {
+    const matchQ = !q || c.nom.toLowerCase().includes(q);
+    const matchCat = !cat || c.cat === cat;
+    return matchQ && matchCat;
+  }).sort((a,b) => a.nom.localeCompare(b.nom));
+
+  const el = document.getElementById('contactList');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty"><div class="icon">📭</div><p>${contacts.length ? 'Aucun résultat' : 'Aucun contact. Ajoutez-en un !'}</p></div>`;
+    return;
+  }
+  el.innerHTML = list.map(c => `
+    <div class="contact-item" onclick="openDetail('${c.id}')">
+      <div class="contact-avatar" style="background:${avatarColor(c.nom)}">${getInitials(c.nom)}</div>
+      <div class="contact-info">
+        <div class="contact-name">${c.nom}</div>
+        <div class="contact-sub">${c.tel || c.email || '—'}</div>
+      </div>
+      ${c.cat ? `<span class="contact-tag">${c.cat}</span>` : ''}
+    </div>
+  `).join('');
+
+  // MAJ filtre catégories
+  updateCatFilter();
+}
+
+function updateCatFilter() {
+  const sel = document.getElementById('filterCat');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Toutes catégories</option>' +
+    categories.map(c => `<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
+}
+
+// ============================================================
+// MODAL ADD/EDIT
+// ============================================================
+function openAddModal(preset) {
+  document.getElementById('modalTitle').textContent = 'Nouveau contact';
+  document.getElementById('cId').value = '';
+  document.getElementById('cNom').value = preset?.nom || '';
+  document.getElementById('cTel').value = preset?.tel || '';
+  document.getElementById('cEmail').value = preset?.email || '';
+  document.getElementById('cNotes').value = '';
+  refreshCatSelect('cCat', preset?.cat || '');
+  openModal('modalContact');
+}
+
+function editContact(id) {
+  closeModal('modalDetail');
+  const c = contacts.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('modalTitle').textContent = 'Modifier le contact';
+  document.getElementById('cId').value = id;
+  document.getElementById('cNom').value = c.nom;
+  document.getElementById('cTel').value = c.tel || '';
+  document.getElementById('cEmail').value = c.email || '';
+  document.getElementById('cNotes').value = c.notes || '';
+  refreshCatSelect('cCat', c.cat || '');
+  openModal('modalContact');
+}
+
+function refreshCatSelect(selId, selected) {
+  const sel = document.getElementById(selId);
+  sel.innerHTML = '<option value="">— Sans catégorie —</option>' +
+    categories.map(c => `<option value="${c}" ${c===selected?'selected':''}>${c}</option>`).join('');
+}
+
+function saveContact() {
+  const nom = document.getElementById('cNom').value.trim();
+  if (!nom) { toast('❌ Le nom est requis'); return; }
+  const id = document.getElementById('cId').value || Date.now().toString();
+  const contact = {
+    id,
+    nom,
+    tel: document.getElementById('cTel').value.trim(),
+    email: document.getElementById('cEmail').value.trim(),
+    cat: document.getElementById('cCat').value,
+    notes: document.getElementById('cNotes').value.trim()
+  };
+  const idx = contacts.findIndex(c => c.id === id);
+  if (idx >= 0) contacts[idx] = contact;
+  else contacts.push(contact);
+  saveContacts();
+  closeModal('modalContact');
+  renderContacts();
+  toast('✅ Contact enregistré');
+}
+
+// ============================================================
+// MODAL DETAIL
+// ============================================================
+function openDetail(id) {
+  currentDetailId = id;
+  const c = contacts.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('detailName').textContent = c.nom;
+  document.getElementById('detailBody').innerHTML = `
+    ${c.cat ? `<div style="margin-bottom:10px;"><span class="contact-tag">${c.cat}</span></div>` : ''}
+    <div class="info-row"><span class="iicon">📞</span><div class="itext"><div class="info-label">Téléphone</div><div class="info-value">${c.tel ? `<a class="phone-link" href="tel:${c.tel}">${c.tel}</a>` : '—'}</div></div></div>
+    <div class="info-row"><span class="iicon">✉️</span><div class="itext"><div class="info-label">Email</div><div class="info-value">${c.email ? `<a class="phone-link" href="mailto:${c.email}">${c.email}</a>` : '—'}</div></div></div>
+    ${c.notes ? `<div class="info-row"><span class="iicon">📝</span><div class="itext"><div class="info-label">Notes</div><div class="info-value">${c.notes}</div></div></div>` : ''}
+  `;
+  openModal('modalDetail');
+}
+
+function deleteContact(id) {
+  if (!confirm('Supprimer ce contact ?')) return;
+  contacts = contacts.filter(c => c.id !== id);
+  saveContacts();
+  closeModal('modalDetail');
+  renderContacts();
+  toast('🗑 Contact supprimé');
+}
+
+// ============================================================
+// MODALS
+// ============================================================
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+// Fermer modal en cliquant sur l'overlay
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function renderSettings() {
+  const key = localStorage.getItem('visionApiKey') || '';
+  document.getElementById('apiKeyInput').value = key;
+  renderTags();
+}
+
+function saveApiKey() {
+  const k = document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem('visionApiKey', k);
+  toast('✅ Clé API enregistrée');
+}
+
+function renderTags() {
+  document.getElementById('tagList').innerHTML = categories.map(c => `
+    <div class="tag-chip">${c}<button onclick="removeTag('${c}')">×</button></div>
+  `).join('');
+  updateCatFilter();
+}
+
+function addTag() {
+  const v = document.getElementById('newTagInput').value.trim();
+  if (!v || categories.includes(v)) return;
+  categories.push(v);
+  localStorage.setItem('categories', JSON.stringify(categories));
+  document.getElementById('newTagInput').value = '';
+  renderTags();
+}
+
+function removeTag(tag) {
+  categories = categories.filter(c => c !== tag);
+  localStorage.setItem('categories', JSON.stringify(categories));
+  renderTags();
+}
+
+function clearAll() {
+  if (!confirm('Effacer TOUS les contacts ? Cette action est irréversible.')) return;
+  contacts = [];
+  saveContacts();
+  renderContacts();
+  toast('🗑 Tous les contacts supprimés');
+}
+
+// ============================================================
+// SCAN / OCR
+// ============================================================
+function checkApiKey() {
+  const key = localStorage.getItem('visionApiKey');
+  document.getElementById('apiWarning').style.display = key ? 'none' : 'block';
+}
+
+function handleImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('previewImg');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    document.getElementById('ocrBtn').style.display = 'flex';
+    // stocker base64 sans préfixe
+    window._imageBase64 = e.target.result.split(',')[1];
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runOCR() {
+  const key = localStorage.getItem('visionApiKey');
+  if (!key) { toast('❌ Clé API manquante (Réglages)'); return; }
+  const btn = document.getElementById('ocrBtn');
+  btn.textContent = '⏳ Analyse en cours…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requests: [{
+          image: { content: window._imageBase64 },
+          features: [{ type: 'DOCUMENT_TEXT_DETECTION' }]
+        }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.responses?.[0]?.fullTextAnnotation?.text || '';
+    if (!text) { toast('Aucun texte détecté'); btn.textContent = '🔍 Extraire les contacts'; btn.disabled = false; return; }
+    parseAndValidate(text);
+  } catch(e) {
+    toast('❌ Erreur OCR : ' + e.message);
+  }
+  btn.textContent = '🔍 Extraire les contacts';
+  btn.disabled = false;
+}
+
+// ============================================================
+// PARSING OCR → contacts candidats
+// ============================================================
+function parseAndValidate(text) {
+  // Regex téléphones FR : formats 0X XX XX XX XX, +33, espaces/tirets/points
+  const telRegex = /(?:\+33\s?|0)[\s.-]?[1-9](?:[\s.-]?\d{2}){4}/g;
+  // Regex emails
+  const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const tels = [...text.matchAll(telRegex)].map(m => m[0].replace(/[\s.-]/g,'').replace(/^(\d{10})$/, '$1'));
+  const emails = [...text.matchAll(emailRegex)];
+
+  // Associer chaque tel/email à la ligne la plus proche pour trouver un nom
+  pendingContacts = [];
+
+  // Construire un tableau de candidats à partir des lignes
+  // Stratégie : si une ligne contient un tel ou email → extraire, ligne précédente = nom probable
+  const found = new Set();
+  lines.forEach((line, i) => {
+    const hasTel = telRegex.test(line); telRegex.lastIndex = 0;
+    const hasEmail = emailRegex.test(line); emailRegex.lastIndex = 0;
+    const tel = (line.match(telRegex)||[])[0]?.replace(/[\s.-]/g,'') || '';
+    const email = (line.match(emailRegex)||[])[0] || '';
+    if (!tel && !email) return;
+    if (found.has(tel || email)) return;
+    found.add(tel || email);
+
+    // Chercher un nom dans les lignes autour
+    let nom = '';
+    for (let d = -2; d <= 2; d++) {
+      if (d === 0) continue;
+      const candidate = lines[i + d] || '';
+      if (!telRegex.test(candidate) && !emailRegex.test(candidate) && candidate.length > 2 && candidate.length < 60 && /[A-Za-zÀ-ÿ]/.test(candidate)) {
+        nom = candidate; break;
+      }
+      telRegex.lastIndex = 0; emailRegex.lastIndex = 0;
+    }
+
+    // Vérifier doublon
+    const isDup = contacts.some(c => tel && c.tel && c.tel.replace(/\s/g,'') === tel.replace(/\s/g,''));
+
+    pendingContacts.push({ nom, tel, email, isDup, mergeId: isDup ? contacts.find(c => c.tel?.replace(/\s/g,'') === tel.replace(/\s/g,''))?.id : null });
+  });
+
+  if (!pendingContacts.length) {
+    toast('Aucun numéro détecté dans l\'image');
+    return;
+  }
+
+  renderValidation();
+  document.getElementById('validationSection').style.display = 'block';
+}
+
+function renderValidation() {
+  const el = document.getElementById('validationList');
+  el.innerHTML = pendingContacts.map((c, i) => `
+    <div class="val-item" id="valItem${i}">
+      <div class="val-item-header">
+        <strong>Contact ${i+1}</strong>
+        <span class="val-badge ${c.isDup ? 'duplicate' : 'new'}">${c.isDup ? '🔀 Doublon' : '🆕 Nouveau'}</span>
+      </div>
+      <label>Nom</label>
+      <input type="text" id="vNom${i}" value="${c.nom}" placeholder="Nom du contact" />
+      <label>Téléphone</label>
+      <input type="tel" id="vTel${i}" value="${c.tel}" placeholder="Numéro" />
+      <label>Email</label>
+      <input type="email" id="vEmail${i}" value="${c.email}" placeholder="Email" />
+      <label>Catégorie</label>
+      <select id="vCat${i}">
+        <option value="">— Sans catégorie —</option>
+        ${categories.map(cat => `<option value="${cat}">${cat}</option>`).join('')}
+      </select>
+      <div class="val-actions">
+        <button class="btn btn-success btn-sm" onclick="acceptOne(${i})">✅ Accepter</button>
+        <button class="btn btn-outline btn-sm" onclick="skipOne(${i})">⏭ Ignorer</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function acceptOne(i) {
+  const c = pendingContacts[i];
+  const nom = document.getElementById(`vNom${i}`).value.trim() || 'Inconnu';
+  const tel = document.getElementById(`vTel${i}`).value.trim();
+  const email = document.getElementById(`vEmail${i}`).value.trim();
+  const cat = document.getElementById(`vCat${i}`).value;
+
+  if (c.isDup && c.mergeId) {
+    // Fusionner
+    const idx = contacts.findIndex(x => x.id === c.mergeId);
+    if (idx >= 0) {
+      if (!contacts[idx].nom && nom) contacts[idx].nom = nom;
+      if (!contacts[idx].email && email) contacts[idx].email = email;
+      if (!contacts[idx].cat && cat) contacts[idx].cat = cat;
+    }
+    toast('🔀 Contact fusionné');
+  } else {
+    contacts.push({ id: Date.now().toString() + i, nom, tel, email, cat, notes: '' });
+    toast('✅ Contact ajouté');
+  }
+  saveContacts();
+  document.getElementById(`valItem${i}`).style.opacity = '0.4';
+  document.getElementById(`valItem${i}`).style.pointerEvents = 'none';
+}
+
+function skipOne(i) {
+  document.getElementById(`valItem${i}`).style.opacity = '0.4';
+  document.getElementById(`valItem${i}`).style.pointerEvents = 'none';
+  toast('⏭ Ignoré');
+}
+
+function acceptAll() {
+  pendingContacts.forEach((_, i) => {
+    const item = document.getElementById(`valItem${i}`);
+    if (item && item.style.opacity !== '0.4') acceptOne(i);
+  });
+  setTimeout(resetScan, 300);
+}
+
+function resetScan() {
+  pendingContacts = [];
+  document.getElementById('validationSection').style.display = 'none';
+  document.getElementById('previewImg').style.display = 'none';
+  document.getElementById('ocrBtn').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+  window._imageBase64 = null;
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+updateCatFilter();
+renderContacts();
+</script>
+</body>
+</html>
